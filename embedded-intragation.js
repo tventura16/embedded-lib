@@ -327,7 +327,7 @@
         this.logger.log("🔐 Autenticando...");
 
         const response = await this.httpClient.request("/auth/authenticate", {
-          method: "POST",
+          method: "GET",
           headers: { "X-API-KEY": this.config.apiKey },
         });
 
