@@ -326,25 +326,43 @@
       async _authenticate() {
         this.logger.log("🔐 Autenticando...");
 
-        const response = await this.httpClient.request("/auth/authenticate", {
-          method: "GET",
-          headers: { "X-API-KEY": this.config.apiKey },
-        });
+        try {
+          const response = await this.httpClient.request("/auth/authenticate", {
+            method: "GET",
+            headers: { "X-API-KEY": this.config.apiKey },
+          });
 
-        if (response.success && response.data.accessToken) {
-          this.accessToken = response.data.accessToken;
-          this.logger.log("✅ Autenticación exitosa");
+          this.logger.log("🔍 Response de autenticación:", response);
 
-          // Programar renovación del token solo en entornos con setTimeout
-          if (typeof setTimeout !== "undefined") {
-            this._scheduleTokenRefresh(response.data.expiresIn || 1800);
+          if (
+            response &&
+            response.success &&
+            response.data &&
+            response.data.accessToken
+          ) {
+            this.accessToken = response.data.accessToken;
+            this.logger.log("✅ Autenticación exitosa - Token obtenido");
+
+            // Programar renovación del token solo en entornos con setTimeout
+            if (typeof setTimeout !== "undefined") {
+              this._scheduleTokenRefresh(response.data.expiresIn || 1800);
+            }
+          } else {
+            const errorMsg =
+              response?.message ||
+              response?.error ||
+              "Respuesta inválida del servidor";
+            this.logger.error("❌ Error en autenticación:", {
+              response: response,
+              hasSuccess: !!response?.success,
+              hasData: !!response?.data,
+              hasAccessToken: !!response?.data?.accessToken,
+            });
+            throw new Error(`Error de autenticación: ${errorMsg}`);
           }
-        } else {
-          throw new Error(
-            `Error de autenticación: ${
-              response.message || "Respuesta inválida"
-            }`
-          );
+        } catch (error) {
+          this.logger.error("❌ Excepción en autenticación:", error);
+          throw error;
         }
       }
 
@@ -352,23 +370,44 @@
         this.logger.log("🔗 Generando enlace embebido...");
 
         if (!this.accessToken) {
-          throw new Error("Token de acceso no disponible");
+          throw new Error("Token de acceso no disponible para generar enlace");
         }
 
-        const response = await this.httpClient.request("/embed/generate-link", {
-          method: "POST",
-          headers: { Authorization: `Bearer ${this.accessToken}` },
-        });
-
-        if (response.success && response.data.embedUrl) {
-          this.embedUrl = response.data.embedUrl;
-          this.logger.log("✅ Enlace embebido generado");
-        } else {
-          throw new Error(
-            `Error generando enlace: ${
-              response.message || "Respuesta inválida"
-            }`
+        try {
+          const response = await this.httpClient.request(
+            "/embed/generate-link",
+            {
+              method: "POST",
+              headers: { Authorization: `Bearer ${this.accessToken}` },
+            }
           );
+
+          this.logger.log("🔍 Response de generate-link:", response);
+
+          if (
+            response &&
+            response.success &&
+            response.data &&
+            response.data.embedUrl
+          ) {
+            this.embedUrl = response.data.embedUrl;
+            this.logger.log("✅ Enlace embebido generado:", this.embedUrl);
+          } else {
+            const errorMsg =
+              response?.message ||
+              response?.error ||
+              "No se pudo obtener embedUrl";
+            this.logger.error("❌ Error generando enlace:", {
+              response: response,
+              hasSuccess: !!response?.success,
+              hasData: !!response?.data,
+              hasEmbedUrl: !!response?.data?.embedUrl,
+            });
+            throw new Error(`Error generando enlace: ${errorMsg}`);
+          }
+        } catch (error) {
+          this.logger.error("❌ Excepción generando enlace:", error);
+          throw error;
         }
       }
 
@@ -378,6 +417,9 @@
           this.logger.log("SDK no inicializado, iniciando...");
           await this.init();
         }
+
+        // Validar que tenemos todo lo necesario
+        this._validateRenderRequirements();
 
         const mode = options.mode || this.config.mode;
         const renderConfig = {
@@ -431,11 +473,24 @@
           throw new Error("Document no disponible en este entorno");
         }
 
+        // Validar que tenemos la URL del embed antes de continuar
+        if (
+          !this.embedUrl ||
+          this.embedUrl === null ||
+          this.embedUrl === "null"
+        ) {
+          throw new Error(
+            "URL del embed no disponible. Verificar autenticación y generación de enlace."
+          );
+        }
+
         let containerElement;
         if (typeof container === "string") {
-          containerElement = document.getElementById(container);
+          containerElement =
+            document.querySelector(container) ||
+            document.getElementById(container.replace("#", ""));
           if (!containerElement) {
-            throw new Error(`Contenedor con ID '${container}' no encontrado`);
+            throw new Error(`Contenedor '${container}' no encontrado`);
           }
         } else if (container instanceof HTMLElement) {
           containerElement = container;
@@ -447,6 +502,7 @@
         containerElement.innerHTML = this._createLoadingHTML(config);
 
         try {
+          this.logger.log("🔗 Creando iframe con URL:", this.embedUrl);
           const iframe = document.createElement("iframe");
           iframe.src = this.embedUrl;
           iframe.width = config.width;
@@ -698,6 +754,34 @@
             resolve(); // Fallback para entornos sin setTimeout
           }
         });
+      }
+
+      _validateRenderRequirements() {
+        const status = this.getStatus();
+
+        this.logger.log("🔍 Validando requisitos para render:", status);
+
+        if (!status.isInitialized) {
+          throw new Error("SDK no está inicializado");
+        }
+
+        if (!status.hasAccessToken) {
+          throw new Error("Token de acceso no disponible");
+        }
+
+        if (!status.hasEmbedUrl) {
+          throw new Error("URL del embed no disponible");
+        }
+
+        if (
+          this.embedUrl === null ||
+          this.embedUrl === "null" ||
+          !this.embedUrl
+        ) {
+          throw new Error("URL del embed es inválida");
+        }
+
+        this.logger.log("✅ Validación de requisitos exitosa");
       }
     }
 

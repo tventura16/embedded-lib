@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Test Diagnóstico - Sintesis Pasarela</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+        background: #f5f5f5;
+      }
+      .container {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        margin: 20px 0;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .debug-info {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 4px;
+        border-left: 4px solid #007bff;
+        margin: 10px 0;
+        font-family: monospace;
+        font-size: 12px;
+      }
+      .error {
+        background: #fee;
+        border-left-color: #dc3545;
+        color: #721c24;
+      }
+      .success {
+        background: #d4edda;
+        border-left-color: #28a745;
+        color: #155724;
+      }
+      button {
+        background: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 4px;
+        cursor: pointer;
+        margin: 5px;
+      }
+      button:hover {
+        background: #0056b3;
+      }
+      button:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+      }
+      #status {
+        min-height: 200px;
+        padding: 20px;
+        background: #fff;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🔧 Diagnóstico Sintesis Pasarela</h1>
+
+    <div class="container">
+      <h2>Configuración</h2>
+      <label>API Key:</label>
+      <input
+        type="text"
+        id="apiKey"
+        placeholder="Ingresa tu API Key"
+        style="width: 300px; padding: 8px; margin: 10px"
+      />
+      <br />
+      <label>
+        <input type="checkbox" id="debugMode" checked /> Modo Debug
+      </label>
+      <br /><br />
+      <button onclick="initPasarela()">1. Inicializar Pasarela</button>
+      <button onclick="testAuth()" disabled id="testAuthBtn">
+        2. Probar Autenticación
+      </button>
+      <button onclick="testEmbed()" disabled id="testEmbedBtn">
+        3. Generar Enlace
+      </button>
+      <button onclick="testRender()" disabled id="testRenderBtn">
+        4. Renderizar
+      </button>
+      <button onclick="clearLogs()">Limpiar Logs</button>
+    </div>
+
+    <div class="container">
+      <h2>Estado Actual</h2>
+      <div id="status">No inicializado</div>
+    </div>
+
+    <div class="container">
+      <h2>Logs de Debug</h2>
+      <div id="logs"></div>
+    </div>
+
+    <div class="container">
+      <h2>Vista Previa</h2>
+      <div
+        id="pasarela-container"
+        style="min-height: 400px; border: 1px dashed #ccc; padding: 20px"
+      >
+        <p>La pasarela se renderizará aquí...</p>
+      </div>
+    </div>
+
+    <!-- Cargar la librería -->
+    <script src="../embedded-intragation.js"></script>
+
+    <script>
+      let pasarela = null;
+
+      function log(message, type = "info") {
+        const timestamp = new Date().toLocaleTimeString();
+        const logsDiv = document.getElementById("logs");
+        const logEntry = document.createElement("div");
+        logEntry.className = `debug-info ${type}`;
+        logEntry.innerHTML = `[${timestamp}] ${message}`;
+        logsDiv.appendChild(logEntry);
+        logsDiv.scrollTop = logsDiv.scrollHeight;
+
+        console.log(`[${timestamp}] ${message}`);
+      }
+
+      function updateStatus() {
+        const statusDiv = document.getElementById("status");
+        if (!pasarela) {
+          statusDiv.innerHTML =
+            '<div class="debug-info error">No inicializado</div>';
+          return;
+        }
+
+        const status = pasarela.getStatus();
+        const statusHtml = `
+                <div class="debug-info ${
+                  status.isInitialized ? "success" : "error"
+                }">
+                    <strong>Estado General:</strong><br>
+                    • Inicializado: ${status.isInitialized ? "✅" : "❌"}<br>
+                    • Cargando: ${status.isLoading ? "⏳" : "✅"}<br>
+                    • Entorno: ${status.environment}<br>
+                    • Modo: ${status.mode}<br>
+                    • Versión: ${status.version}<br>
+                    • Reintentos: ${status.retryCount}/${3}<br><br>
+                    
+                    <strong>Tokens y URLs:</strong><br>
+                    • Access Token: ${
+                      status.hasAccessToken
+                        ? "✅ Disponible"
+                        : "❌ No disponible"
+                    }<br>
+                    • Embed URL: ${
+                      status.hasEmbedUrl ? "✅ Disponible" : "❌ No disponible"
+                    }<br>
+                    
+                    ${
+                      status.hasAccessToken
+                        ? `• Token: ${pasarela
+                            .getAccessToken()
+                            ?.substring(0, 20)}...<br>`
+                        : ""
+                    }
+                    ${
+                      status.hasEmbedUrl
+                        ? `• URL: ${pasarela.getEmbedUrl()}<br>`
+                        : ""
+                    }
+                </div>
+            `;
+        statusDiv.innerHTML = statusHtml;
+      }
+
+      function enableButton(buttonId, enabled = true) {
+        document.getElementById(buttonId).disabled = !enabled;
+      }
+
+      async function initPasarela() {
+        try {
+          const apiKey = document.getElementById("apiKey").value;
+          if (!apiKey.trim()) {
+            alert("Por favor ingresa un API Key");
+            return;
+          }
+
+          const debugMode = document.getElementById("debugMode").checked;
+
+          log("🚀 Inicializando SDK...", "info");
+
+          pasarela = SintesisPasarela.create({
+            apiKey: apiKey,
+            debug: debugMode,
+            mode: "iframe",
+            onSuccess: (data) => {
+              log(
+                "✅ Callback onSuccess: " + JSON.stringify(data, null, 2),
+                "success"
+              );
+              updateStatus();
+            },
+            onError: (error) => {
+              log(
+                "❌ Callback onError: " + JSON.stringify(error, null, 2),
+                "error"
+              );
+              updateStatus();
+            },
+            onLoad: (data) => {
+              log(
+                "📝 Callback onLoad: " + JSON.stringify(data, null, 2),
+                "info"
+              );
+            },
+          });
+
+          log("✅ SDK creado correctamente", "success");
+          enableButton("testAuthBtn", true);
+          updateStatus();
+        } catch (error) {
+          log("❌ Error creando SDK: " + error.message, "error");
+          console.error("Error:", error);
+        }
+      }
+
+      async function testAuth() {
+        if (!pasarela) {
+          alert("Primero inicializa la pasarela");
+          return;
+        }
+
+        try {
+          log("🔐 Probando autenticación manual...", "info");
+          await pasarela._authenticate();
+          log("✅ Autenticación exitosa", "success");
+          enableButton("testEmbedBtn", true);
+          updateStatus();
+        } catch (error) {
+          log("❌ Error en autenticación: " + error.message, "error");
+          console.error("Error:", error);
+        }
+      }
+
+      async function testEmbed() {
+        if (!pasarela) {
+          alert("Primero inicializa la pasarela");
+          return;
+        }
+
+        try {
+          log("🔗 Probando generación de enlace...", "info");
+          await pasarela._generateEmbedLink();
+          log("✅ Enlace generado exitosamente", "success");
+          enableButton("testRenderBtn", true);
+          updateStatus();
+        } catch (error) {
+          log("❌ Error generando enlace: " + error.message, "error");
+          console.error("Error:", error);
+        }
+      }
+
+      async function testRender() {
+        if (!pasarela) {
+          alert("Primero inicializa la pasarela");
+          return;
+        }
+
+        try {
+          log("🎯 Probando renderizado...", "info");
+          const container = document.getElementById("pasarela-container");
+
+          const result = await pasarela.render(container, {
+            width: "100%",
+            height: "400px",
+          });
+
+          log(
+            "✅ Renderizado exitoso: " + JSON.stringify(result, null, 2),
+            "success"
+          );
+          updateStatus();
+        } catch (error) {
+          log("❌ Error en renderizado: " + error.message, "error");
+          console.error("Error:", error);
+        }
+      }
+
+      function clearLogs() {
+        document.getElementById("logs").innerHTML = "";
+      }
+
+      // Logs iniciales
+      log(
+        "📱 Página cargada - Entorno detectado: " +
+          SintesisPasarela.environment,
+        "info"
+      );
+      log("📦 Versión SDK: " + SintesisPasarela.version, "info");
+      updateStatus();
+    </script>
+  </body>
+</html>
