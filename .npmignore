@@ -1,0 +1,45 @@
+# Archivos para ignorar en la publicación npm
+
+# Directorios de desarrollo
+node_modules/
+.git/
+.vscode/
+.idea/
+
+# Archivos de configuración local
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Archivos de prueba
+test/
+tests/
+__tests__/
+*.test.js
+*.spec.js
+
+# Archivos de build y temporales
+dist/
+build/
+tmp/
+temp/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Archivos del sistema operativo
+.DS_Store
+Thumbs.db
+
+# Archivos de desarrollo
+examples/
+docs/
+.gitignore
+.npmrc
+.nvmrc

@@ -1,0 +1,67 @@
+{
+  "name": "sintesis-pasarela-universal",
+  "version": "2.0.0",
+  "description": "SDK Universal Sintesis Pasarela - Compatible con Web, Mobile y Desktop. Una librería JavaScript universal para integración de pasarela de pagos.",
+  "main": "embedded-intragation.js",
+  "module": "embedded-intragation.js",
+  "unpkg": "embedded-intragation.js",
+  "jsdelivr": "embedded-intragation.js",
+  "types": "index.d.ts",
+  "files": [
+    "embedded-intragation.js",
+    "index.d.ts",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "echo \"Build step - no build needed for UMD library\"",
+    "lint": "echo \"Add linting script here\"",
+    "prepare": "echo \"Prepare for npm publish\"",
+    "version": "echo \"Version bumped to $npm_package_version\""
+  },
+  "keywords": [
+    "pasarela",
+    "pagos",
+    "payment",
+    "gateway",
+    "sintesis",
+    "universal",
+    "umd",
+    "javascript",
+    "web",
+    "mobile",
+    "node",
+    "react-native"
+  ],
+  "author": {
+    "name": "Sintesis",
+    "email": "info@sintesis.com.bo",
+    "url": "https://sintesis.com.bo"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sintesis/embedded-lib.git"
+  },
+  "bugs": {
+    "url": "https://github.com/sintesis/embedded-lib/issues"
+  },
+  "homepage": "https://github.com/sintesis/embedded-lib#readme",
+  "engines": {
+    "node": ">=12.0.0"
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead",
+    "not ie <= 11"
+  ],
+  "peerDependencies": {
+    "node-fetch": "^3.0.0"
+  },
+  "peerDependenciesMeta": {
+    "node-fetch": {
+      "optional": true
+    }
+  }
+}

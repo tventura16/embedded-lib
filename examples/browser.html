@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ejemplo Browser - Sintesis Pasarela</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      .container {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 20px;
+        margin: 20px 0;
+      }
+      button {
+        background: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      button:hover {
+        background: #0056b3;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Sintesis Pasarela - Ejemplo Browser</h1>
+
+    <!-- Método 1: Auto-inicialización -->
+    <div class="container">
+      <h2>Auto-inicialización</h2>
+      <div
+        data-sintesis-pasarela
+        data-api-key="test-api-key"
+        data-mode="iframe"
+        data-width="100%"
+        data-height="400px"
+        data-debug
+      ></div>
+    </div>
+
+    <!-- Método 2: Inicialización manual -->
+    <div class="container">
+      <h2>Inicialización Manual</h2>
+      <button onclick="initManual()">Inicializar Pasarela</button>
+      <div id="pasarela-manual" style="margin-top: 20px"></div>
+    </div>
+
+    <!-- CDN Script -->
+    <script src="../embedded-intragation.js"></script>
+
+    <script>
+      // Inicialización manual
+      function initManual() {
+        const pasarela = SintesisPasarela.create({
+          apiKey: "test-api-key",
+          debug: true,
+          mode: "iframe",
+          onSuccess: function (data) {
+            console.log("✅ Éxito:", data);
+            alert("Pasarela inicializada correctamente");
+          },
+          onError: function (error) {
+            console.error("❌ Error:", error);
+            alert("Error: " + error.message);
+          },
+          onLoad: function () {
+            console.log("📝 Cargando...");
+          },
+        });
+
+        // Renderizar en contenedor específico
+        pasarela.render("#pasarela-manual", {
+          width: "100%",
+          height: "400px",
+        });
+      }
+
+      // Ejemplo de procesamiento de pago (API only)
+      async function processPaymentExample() {
+        const pasarela = SintesisPasarela.create({
+          apiKey: "test-api-key",
+          mode: "api-only",
+          debug: true,
+        });
+
+        try {
+          await pasarela.init();
+
+          const result = await pasarela.processPayment({
+            amount: 150.0,
+            currency: "BOB",
+            description: "Pago de prueba desde browser",
+            reference: "REF-" + Date.now(),
+            customer: {
+              name: "Juan Pérez",
+              email: "juan@ejemplo.com",
+              phone: "+591 7000000",
+            },
+          });
+
+          console.log("Pago procesado:", result);
+          alert("Pago procesado exitosamente");
+        } catch (error) {
+          console.error("Error en pago:", error);
+          alert("Error en pago: " + error.message);
+        }
+      }
+
+      // Log de entorno detectado
+      console.log(
+        "Entorno detectado:",
+        window.SintesisPasarela ? "Browser global disponible" : "No disponible"
+      );
+    </script>
+  </body>
+</html>
