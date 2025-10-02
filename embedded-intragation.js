@@ -1,4 +1,4 @@
-// sintesis-pasarela-universal.js v2.0.0
+// sintesis-pasarela-universal.js v2.0.1
 // SDK Universal Sintesis Pasarela - Compatible con Web, Mobile y Desktop
 // (c) 2025 Sintesis - MIT License
 
@@ -67,7 +67,7 @@
   function (environment) {
     "use strict";
 
-    const VERSION = "2.0.0";
+    const VERSION = "2.0.1";
     const BASE_URL =
       "https://qa.sintesis.com.bo/pasarelapagos-msapi/embedded/api/v1";
 
