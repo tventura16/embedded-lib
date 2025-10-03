@@ -355,9 +355,32 @@
           throw new Error("Token de acceso no disponible");
         }
 
+        // Preparar datos opcionales del body
+        const requestBody = {};
+
+        // Agregar datos opcionales si están configurados
+        if (this.config.customerInfo) {
+          if (this.config.customerInfo.email) {
+            requestBody.email = this.config.customerInfo.email;
+          }
+          if (this.config.customerInfo.firstName) {
+            requestBody.firstName = this.config.customerInfo.firstName;
+          }
+          if (this.config.customerInfo.lastName) {
+            requestBody.lastName = this.config.customerInfo.lastName;
+          }
+          if (this.config.customerInfo.identityNumber) {
+            requestBody.identityNumber =
+              this.config.customerInfo.identityNumber;
+          }
+        }
+
+        this.logger.log("📝 Datos para generate-link:", requestBody);
+
         const response = await this.httpClient.request("/embed/generate-link", {
           method: "POST",
           headers: { Authorization: `Bearer ${this.accessToken}` },
+          body: Object.keys(requestBody).length > 0 ? requestBody : undefined,
         });
 
         if (response.success && response.data.embedUrl) {
@@ -641,6 +664,34 @@
           version: VERSION,
           timestamp: new Date().toISOString(),
         };
+      }
+
+      setCustomerInfo(customerInfo = {}) {
+        this.logger.log(
+          "👤 Configurando información del cliente:",
+          customerInfo
+        );
+
+        this.config.customerInfo = {
+          email: customerInfo.email || null,
+          firstName: customerInfo.firstName || null,
+          lastName: customerInfo.lastName || null,
+          identityNumber: customerInfo.identityNumber || null,
+        };
+
+        // Si ya está inicializado, regenerar el enlace con la nueva información
+        if (this.isInitialized && this.accessToken) {
+          this.logger.log(
+            "🔄 Regenerando enlace con nueva información del cliente..."
+          );
+          return this._generateEmbedLink();
+        }
+
+        return Promise.resolve();
+      }
+
+      getCustomerInfo() {
+        return this.config.customerInfo || null;
       }
 
       _scheduleTokenRefresh(expiresIn) {

@@ -3,6 +3,13 @@
 // Definitions by: Sintesis Team
 
 declare namespace SintesisPasarela {
+  interface CustomerInfo {
+    email?: string;
+    firstName?: string;
+    lastName?: string;
+    identityNumber?: string;
+  }
+
   interface Config {
     apiKey: string;
     baseUrl?: string;
@@ -10,6 +17,7 @@ declare namespace SintesisPasarela {
     debug?: boolean;
     timeout?: number;
     mode?: "auto" | "webview" | "iframe" | "api-only";
+    customerInfo?: CustomerInfo;
     onSuccess?: (data: SuccessData) => void;
     onError?: (error: ErrorData) => void;
     onLoad?: () => void;
@@ -65,6 +73,8 @@ declare namespace SintesisPasarela {
       options?: RenderOptions
     ): Promise<void>;
     processPayment(paymentData: PaymentData): Promise<any>;
+    setCustomerInfo(customerInfo: CustomerInfo): Promise<void>;
+    getCustomerInfo(): CustomerInfo | null;
     destroy(): void;
     getStatus(): string;
     getEmbedUrl(): string | null;

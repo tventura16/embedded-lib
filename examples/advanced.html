@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ejemplo Avanzado - Sintesis Pasarela con Customer Info</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+        background: #f5f5f5;
+      }
+      .container {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        margin: 20px 0;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .form-group {
+        margin-bottom: 15px;
+      }
+      .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+      }
+      .form-group input {
+        width: 100%;
+        max-width: 300px;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+      button {
+        background: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 4px;
+        cursor: pointer;
+        margin: 5px;
+      }
+      button:hover {
+        background: #0056b3;
+      }
+      button:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+      }
+      .status {
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 4px;
+        padding: 15px;
+        margin: 10px 0;
+        font-family: monospace;
+        font-size: 12px;
+      }
+      .success {
+        background: #d4edda;
+        border-color: #c3e6cb;
+        color: #155724;
+      }
+      .error {
+        background: #fee;
+        border-color: #fcc;
+        color: #721c24;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🚀 Sintesis Pasarela - Ejemplo Avanzado</h1>
+
+    <div class="container">
+      <h2>Configuración de la Pasarela</h2>
+
+      <div class="form-group">
+        <label for="apiKey">API Key *</label>
+        <input
+          type="text"
+          id="apiKey"
+          placeholder="Ingresa tu API Key"
+          required
+        />
+      </div>
+
+      <div style="margin: 20px 0">
+        <label>
+          <input type="checkbox" id="debugMode" checked /> Modo Debug
+        </label>
+      </div>
+
+      <button onclick="initPasarela()">Inicializar Pasarela</button>
+      <button onclick="clearStatus()">Limpiar Estado</button>
+    </div>
+
+    <div class="container">
+      <h2>Información del Cliente (Opcional)</h2>
+      <p>
+        <small>Esta información se enviará al generar el enlace embebido</small>
+      </p>
+
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" placeholder="bolivia@sintesis.com.bo" />
+      </div>
+
+      <div class="form-group">
+        <label for="firstName">Nombre</label>
+        <input type="text" id="firstName" placeholder="Alejandro" />
+      </div>
+
+      <div class="form-group">
+        <label for="lastName">Apellido</label>
+        <input type="text" id="lastName" placeholder="Montero" />
+      </div>
+
+      <div class="form-group">
+        <label for="identityNumber">Número de Identidad</label>
+        <input type="text" id="identityNumber" placeholder="8569751" />
+      </div>
+
+      <button onclick="setCustomerInfo()">Configurar Cliente</button>
+      <button onclick="showCustomerInfo()">Ver Info Actual</button>
+    </div>
+
+    <div class="container">
+      <h2>Estado de la Pasarela</h2>
+      <div id="status" class="status">No inicializada</div>
+    </div>
+
+    <div class="container">
+      <h2>Vista Previa</h2>
+      <div
+        id="pasarela-container"
+        style="
+          min-height: 500px;
+          border: 1px dashed #ccc;
+          padding: 20px;
+          background: white;
+        "
+      >
+        <p style="text-align: center; color: #666">
+          La pasarela se renderizará aquí...
+        </p>
+      </div>
+    </div>
+
+    <!-- Cargar la librería -->
+    <script src="../embedded-intragation.js"></script>
+
+    <script>
+      let pasarela = null;
+
+      function updateStatus(message, type = "info") {
+        const statusDiv = document.getElementById("status");
+        statusDiv.className = `status ${type}`;
+        statusDiv.innerHTML = message;
+        console.log(message);
+      }
+
+      function clearStatus() {
+        updateStatus("Estado limpiado", "info");
+        const container = document.getElementById("pasarela-container");
+        container.innerHTML =
+          '<p style="text-align: center; color: #666;">La pasarela se renderizará aquí...</p>';
+      }
+
+      async function initPasarela() {
+        try {
+          const apiKey = document.getElementById("apiKey").value;
+          if (!apiKey.trim()) {
+            alert("Por favor ingresa un API Key");
+            return;
+          }
+
+          const debugMode = document.getElementById("debugMode").checked;
+
+          updateStatus("🚀 Inicializando SDK...", "info");
+
+          // Crear instancia con información del cliente si está disponible
+          const customerInfo = getCustomerInfoFromForm();
+
+          pasarela = SintesisPasarela.create({
+            apiKey: apiKey,
+            debug: debugMode,
+            mode: "iframe",
+            customerInfo: customerInfo, // Información inicial del cliente
+            onSuccess: (data) => {
+              updateStatus(
+                `✅ Éxito: ${JSON.stringify(data, null, 2)}`,
+                "success"
+              );
+              renderPasarela();
+            },
+            onError: (error) => {
+              updateStatus(
+                `❌ Error: ${JSON.stringify(error, null, 2)}`,
+                "error"
+              );
+            },
+            onLoad: (data) => {
+              updateStatus(
+                `📝 Cargando: ${JSON.stringify(data, null, 2)}`,
+                "info"
+              );
+            },
+          });
+
+          // Inicializar
+          await pasarela.init();
+          updateStatus("✅ Pasarela inicializada correctamente", "success");
+        } catch (error) {
+          updateStatus(`❌ Error inicializando: ${error.message}`, "error");
+          console.error("Error:", error);
+        }
+      }
+
+      function getCustomerInfoFromForm() {
+        const email = document.getElementById("email").value.trim();
+        const firstName = document.getElementById("firstName").value.trim();
+        const lastName = document.getElementById("lastName").value.trim();
+        const identityNumber = document
+          .getElementById("identityNumber")
+          .value.trim();
+
+        // Solo retornar objeto si al menos un campo tiene valor
+        if (email || firstName || lastName || identityNumber) {
+          return {
+            email: email || undefined,
+            firstName: firstName || undefined,
+            lastName: lastName || undefined,
+            identityNumber: identityNumber || undefined,
+          };
+        }
+
+        return null;
+      }
+
+      async function setCustomerInfo() {
+        if (!pasarela) {
+          alert("Primero inicializa la pasarela");
+          return;
+        }
+
+        try {
+          const customerInfo = getCustomerInfoFromForm();
+
+          if (!customerInfo) {
+            alert("Ingresa al menos un dato del cliente");
+            return;
+          }
+
+          updateStatus(`👤 Configurando información del cliente...`, "info");
+
+          await pasarela.setCustomerInfo(customerInfo);
+
+          updateStatus(
+            `✅ Información del cliente configurada: ${JSON.stringify(
+              customerInfo,
+              null,
+              2
+            )}`,
+            "success"
+          );
+
+          // Re-renderizar con la nueva información
+          renderPasarela();
+        } catch (error) {
+          updateStatus(
+            `❌ Error configurando cliente: ${error.message}`,
+            "error"
+          );
+          console.error("Error:", error);
+        }
+      }
+
+      function showCustomerInfo() {
+        if (!pasarela) {
+          alert("Primero inicializa la pasarela");
+          return;
+        }
+
+        const customerInfo = pasarela.getCustomerInfo();
+        const status = pasarela.getStatus();
+
+        const info = `
+📊 Estado de la Pasarela:
+${JSON.stringify(status, null, 2)}
+
+👤 Información del Cliente:
+${customerInfo ? JSON.stringify(customerInfo, null, 2) : "No configurada"}
+
+🔗 URLs:
+• Access Token: ${pasarela.getAccessToken() ? "Disponible" : "No disponible"}
+• Embed URL: ${pasarela.getEmbedUrl() || "No disponible"}
+            `;
+
+        updateStatus(info, "info");
+      }
+
+      async function renderPasarela() {
+        if (!pasarela) return;
+
+        try {
+          updateStatus("🎯 Renderizando pasarela...", "info");
+
+          const container = document.getElementById("pasarela-container");
+
+          await pasarela.render(container, {
+            width: "100%",
+            height: "500px",
+          });
+
+          updateStatus("✅ Pasarela renderizada exitosamente", "success");
+        } catch (error) {
+          updateStatus(`❌ Error renderizando: ${error.message}`, "error");
+          console.error("Error:", error);
+        }
+      }
+
+      // Logs iniciales
+      updateStatus(
+        `📱 Página cargada - SDK v${SintesisPasarela.version} - Entorno: ${SintesisPasarela.environment}`,
+        "info"
+      );
+    </script>
+  </body>
+</html>

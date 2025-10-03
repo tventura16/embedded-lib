@@ -140,12 +140,47 @@ const config = {
   timeout: number,               // Opcional: Timeout en ms (default: 30000)
   mode: 'string',                // Opcional: 'auto', 'webview', 'iframe', 'api-only'
   
+  // Información del cliente (opcional)
+  customerInfo: {
+    email: 'string',             // Opcional: Email del cliente
+    firstName: 'string',         // Opcional: Nombre del cliente
+    lastName: 'string',          // Opcional: Apellido del cliente
+    identityNumber: 'string'     // Opcional: Número de identidad
+  },
+  
   // Callbacks
   onSuccess: function,           // Callback de éxito
   onError: function,             // Callback de error
   onLoad: function,              // Callback de carga
   onTokenExpired: function       // Callback de token expirado
 };
+```
+
+### Configurar información del cliente
+
+```javascript
+// Durante la inicialización
+const pasarela = SintesisPasarela.create({
+  apiKey: 'tu-api-key',
+  customerInfo: {
+    email: 'bolivia@sintesis.com.bo',
+    firstName: 'Alejandro',
+    lastName: 'Montero',
+    identityNumber: '8569751'
+  }
+});
+
+// O dinámicamente después de la inicialización
+await pasarela.setCustomerInfo({
+  email: 'nuevo@email.com',
+  firstName: 'Nuevo',
+  lastName: 'Cliente',
+  identityNumber: '1234567'
+});
+
+// Obtener información actual del cliente
+const customerInfo = pasarela.getCustomerInfo();
+console.log(customerInfo);
 ```
 
 ### Modos de operación
@@ -183,6 +218,12 @@ Procesa un pago (modo API-only).
 
 #### `pasarela.destroy()`
 Destruye la instancia y limpia recursos.
+
+#### `pasarela.setCustomerInfo(customerInfo)`
+Configura la información del cliente y regenera el enlace embebido si es necesario.
+
+#### `pasarela.getCustomerInfo()`
+Obtiene la información actual del cliente configurada.
 
 ### Métodos de utilidad
 
